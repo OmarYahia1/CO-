@@ -1,0 +1,431 @@
+org 100h   
+
+
+MACRO subBytes N
+     LOCAL L1
+        XOR AX,AX  
+        Mov si, 0
+    L1: Mov AL, N[si]
+        Mov DI, AX
+        Mov BL, SB[DI] 
+        Mov N[si], BL
+        inc si
+        cmp si,16
+        jnz L1
+
+ENDM
+
+MACRO subBytesCol N
+     LOCAL L0
+        XOR AX,AX 
+        Mov si, 0
+    L0: Mov AL, N[si]
+        Mov DI, AX
+        Mov BL, SB[DI] 
+        Mov N[si], BL
+        inc si
+        cmp si,4
+        jnz L0
+
+ENDM
+
+MACRO shiftRows N
+     LOCAL L2,L,L3,LR,L4
+        XOR AX,AX
+        XOR BX,BX
+        XOR CX,CX
+        XOR DX,DX 
+        Mov si, 4
+        Mov AL, N[si]
+        Mov di, 5 
+    L2: Mov DH, N[di]
+        Mov N[si], DH 
+        inc si
+        inc di
+        cmp si,8
+        jnz L2
+        Mov N[si-1], AL  
+        
+        Mov BL, 1
+    L:  Mov si, 8
+        Mov AL, N[si]
+        Mov di, 9 
+    L3: Mov DH, N[di]
+        Mov N[si], DH 
+        inc si
+        inc di
+        cmp si,12
+        jnz L3
+        Mov N[si-1], AL
+        inc BL
+        cmp BL, 3
+        jnz L
+        
+        Mov BL, 1
+   LR:  Mov si, 12
+        Mov AL, N[si]
+        Mov di, 13 
+    L4: Mov DH, N[di]
+        Mov N[si], DH 
+        inc si
+        inc di
+        cmp si,16
+        jnz L4
+        Mov N[si-1], AL
+        inc BL
+        cmp BL, 4
+        jnz LR
+        
+ENDM
+
+MACRO Round N,M
+     LOCAL L5
+        Mov si,0
+   L5:  Mov AL,N[[si]]
+        Mov BL, M[[si]]
+        XOR AL,BL
+        Mov N[[si]],AL
+        inc si
+        cmp si,16
+        jnz L5
+ENDM
+
+MACRO Key C
+     LOCAL L6,L7
+     xor AX,AX
+     XOR DX,DX
+     XOR BX,BX
+     XOR CX,CX
+     Mov AL,C[3]
+     Mov Col[0],AL
+     Mov AL,C[7]
+     Mov Col[1],AL
+     Mov AL,C[11]
+     Mov Col[2],AL
+     Mov AL,C[15]
+     Mov Col[3],AL
+     Mov si, 0
+     Mov AL, Col[si]
+     Mov di, 1 
+ L6: Mov DH, Col[di]
+     Mov Col[si], DH 
+     inc si
+     inc di
+     cmp si,4
+     jnz L6
+     Mov Col[si-1],AL
+     subBytesCol Col
+     
+     XOR AX,AX
+     XOR DX,DX
+     XOR BX,BX
+     XOR CX,CX
+ 
+     
+     Mov AL,Col[0]
+     Mov BL,C[0]
+     Mov DL,Rcon[BP]
+     XOR AL,BL
+     XOR AL,DL
+     Mov C[0],AL
+      
+     Mov AL,Col[1]
+     Mov BL,C[4]
+     Mov DL,Rcon[10]
+     XOR AL,BL
+     XOR AL,DL
+     Mov C[4],AL
+     
+     Mov AL,Col[2]
+     Mov BL,C[8]
+     Mov DL,Rcon[20]
+     XOR AL,BL
+     XOR AL,DL
+     Mov C[8],AL
+     
+     Mov AL,Col[3]
+     Mov BL,C[12]
+     Mov DL,Rcon[30]
+     XOR AL,BL
+     XOR AL,DL
+     Mov C[12],AL
+     
+     Mov si,0
+     Mov di,1
+     XOR AX,AX
+     XOR DX,DX
+     XOR BX,BX
+     XOR CX,CX
+     
+ L7: Mov AL,C[si]
+     Mov BL,C[di]
+     XOR AL,BL
+     Mov C[di],AL
+     
+     Mov AL,C[si+4]
+     Mov BL,C[di+4]
+     XOR AL,BL
+     Mov C[di+4],AL
+     
+     Mov AL,C[si+8]
+     Mov BL, C[di+8]
+     XOR AL,BL
+     Mov C[di+8],AL
+     
+     Mov AL,C[si+12]
+     Mov BL,C[di+12]
+     XOR AL,BL
+     Mov C[di+12],AL
+     
+     inc si
+     inc di
+     cmp si,3
+     jnz L7
+  
+   
+ENDM
+
+MACRO MixColumns N 
+     LOCAL L8,F,F1,F2,F3,F4,F5,F6,F7  
+     XOR AX,AX
+     XOR BX,BX
+     XOR CX,CX
+     XOR DX,DX
+     Mov si,0
+ L8: Mov AL,A[si]
+     SHL AL,01
+     Mov BL,A[si]
+     ADD BL,00H
+     JNS F
+     XOR AL,1bH
+     
+  F: Mov BL,A[si+4]
+     SHL BL,01
+     Mov DL,A[si+4]
+     ADD DL,00H
+     JNS F1
+     XOR BL,1bH
+ F1: XOR BL,A[si+4]
+     
+     XOR AL,BL
+     XOR AL,A[si+8]
+     XOR AL,A[si+12]
+     Mov CL,AL   
+     
+                           
+     Mov AL,A[si+4]
+     SHL AL,01
+     Mov BL,A[si+4]
+     ADD BL,00H
+     JNS F2
+     XOR AL,1bH
+     
+ F2: Mov BL,A[si+8]
+     SHL BL,01
+     Mov DH,A[si+8]
+     ADD DH,00H
+     JNS F3
+     XOR BL,1bH
+ F3: XOR BL,A[si+8]
+     XOR AL,A[si]
+     XOR AL,BL
+     XOR AL,A[si+12]
+     Mov CH,AL
+     
+     
+     Mov AL,A[si+8]
+     SHL AL,01
+     Mov BL,A[si+8]
+     ADD BL,00H
+     JNS F4
+     XOR AL,1bH
+     
+ F4: Mov BL,A[si+12]
+     SHL BL,01
+     Mov DH,A[si+12]
+     ADD DH,00H
+     JNS F5
+     XOR BL,1bH
+ F5: XOR BL,A[si+12]
+     
+     Mov AH,A[si]
+     XOR AH,A[si+4]
+     XOR AL,AH
+     XOR AL,BL
+     Mov DL,AL
+      
+     Mov AL,A[si+12]
+     SHL AL,01
+     Mov BL,A[si+12]
+     ADD BL,00H
+     JNS F6
+     XOR AL,1bH
+     
+ F6: Mov BL,A[si]
+     SHL BL,01
+     Mov DH,A[si]
+     ADD DH,00H
+     JNS F7
+     XOR BL,1bH
+ F7: XOR BL,A[si]
+     XOR BL,A[si+4]
+     XOR BL,A[si+8]
+     XOR BL,AL
+     Mov DH,BL
+     
+     Mov A[si],CL
+     Mov A[si+4],CH
+     Mov A[si+8],DL
+     Mov A[si+12],DH
+     
+     inc si
+     cmp si,4
+     JNZ L8
+    
+    
+    
+ENDM
+
+
+.data segment
+;    A DB 32H, 88H, 31H, 0e0H
+;      DB 43H, 5aH, 31H, 37H
+;      DB 0f6H, 30H, 98H, 07H
+;      DB 0a8H, 8dH, 0a2H, 34H  
+      
+    A DB 16,?,16 DUP(?)
+    
+    C DB 2bH, 28H, 0abH, 09H
+      DB 7eH, 0aeH, 0f7H, 0cfH
+      DB 15H, 0d2H, 15H, 4fH
+      DB 16H, 0a6H, 88H, 3cH 
+      
+     
+  Col DB 00H, 00H, 00H, 00H
+  
+ Rcon DB 01H, 02H, 04H, 08H, 10H, 20H, 40H, 80H, 1bH, 36H
+      DB 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
+      DB 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
+      DB 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
+                  
+      
+   SB DB 63H, 7cH, 77H, 7bH, 0f2H, 6bH, 6fH, 0c5H, 30H, 01H, 67H, 2BH, 0feH, 0d7H, 0abH, 76H
+      DB 0caH, 82H, 0c9H, 7dH, 0faH, 59H, 47H, 0f0H, 0adH, 0d4H, 0a2H, 0afH, 9cH, 0a4H, 72H, 0c0H
+      DB 0b7H, 0fdH, 93H, 26H, 36H, 3fH, 0f7H, 0ccH, 34H, 0a5H, 0e5H, 0f1H, 71H, 0d8H, 31H, 15H 
+      DB 04H, 0c7H, 23H, 0c3H, 18H, 96H, 05H, 9aH, 07H, 12H, 80H, 0e2H, 0ebH, 27H, 0b2H, 75H 
+      DB 09H, 83H, 2cH, 1aH, 1bH, 6eH, 5aH, 0a0H, 52H, 3bH, 0d6H, 0b3H, 29H, 0e3H, 2fH, 84H 
+      DB 53H, 0d1H, 00H, 0edH, 20H, 0fcH, 0b1H, 5bH, 6aH, 0cbH, 0beH, 39H, 4aH, 4cH, 58H, 0cfH 
+      DB 0d0H, 0efH, 0aaH, 0fbH, 43H, 4dH, 33H, 85H, 45H, 0f9H, 02H, 7fH, 50H, 3cH, 9fH, 0a8H
+      DB 51H, 0a3H, 40H, 8fH, 92H, 9dH, 38H, 0f5H, 0bcH, 0b6H, 0daH, 21H, 10H, 0ffH, 0f3H, 0d2H
+      DB 0cdH, 0cH, 13H, 0ecH, 5fH, 97H, 44H, 17H, 0c4H, 0a7H, 7eH, 3dH, 64H, 5dH, 19H, 73H 
+      DB 60H, 81H, 4fH, 0dcH, 22H, 2aH, 90H, 88H, 46H, 0eeH, 0b8H, 14H, 0deH, 5eH, 0bH, 0dbH
+      DB 0e0H, 32H, 3aH, 0aH, 49H, 06H, 24H, 5cH, 0c2H, 0d3H, 0acH, 62H, 91H, 95H, 0e4H, 79H 
+      DB 0e7H, 0c8H, 37H, 6dH, 8dH, 0d5H, 4eH, 0a9H, 6cH, 56H, 0f4H, 0eaH, 65H, 7aH, 0aeH, 08H 
+      DB 0baH, 78H, 25H, 2eH, 1cH, 0a6H, 0b4H, 0c6H, 0e8H, 0ddH, 74H, 1fH, 4bH, 0bdH, 8bH, 8aH 
+      DB 70H, 3eH, 0b5H, 66H, 48H, 03H, 0f6H, 0eH, 61H, 35H, 57H, 0b9H, 86H, 0c1H, 1dH, 9eH
+      DB 0e1H, 0f8H, 98H, 11H, 69H, 0d9H, 8eH, 94H, 9bH, 1eH, 87H, 0e9H, 0ceH, 55H, 28H, 0dfH
+      DB 8cH, 0a1H, 89H, 0dH, 0bfH, 0e6H, 42H, 68H, 41H, 99H, 2dH, 0fH, 0b0H, 54H, 0bbH, 16H   
+      
+      
+.code segment
+      
+      MOV si, 0
+      
+L16:  CALL Input
+      INC si
+      CMP si,16
+      JNZ L16
+      
+ 
+         
+     Round A,C
+     Mov BP,0   
+  G: subBytes A
+     shiftRows A
+     MixColumns A
+     Key C  
+     Round A,C
+     inc BP
+     cmp BP,9
+     JNZ G 
+      
+     subBytes A
+     shiftRows A
+     Key C 
+     Round A,C
+
+
+     MOV si, 0
+     
+L15: Mov BL,A[si]
+     CALL Output
+     INC si
+     CMP si, 16
+     JNZ L15
+        
+ret
+
+PROC Input
+
+      
+      XOR BX,BX        
+      MOV CL,4      
+      
+      
+      MOV AH,1         
+      INT 21h
+      
+      
+      INPUT1:
+          MOV DL, AL
+          CMP AL,0DH   
+          JE end2     
+         
+      
+          CMP AL,39h   
+          JG LETTER1
+          
+          AND AL,0FH   
+          JMP SHIFT1
+          
+      LETTER1:         
+          SUB AL,37H
+       
+      SHIFT1:
+          SHL BX,CL    
+          OR  BL,AL    
+          
+          INT 21h
+          JMP INPUT1
+  end2:  MOV A[si], BL        
+          
+  ret
+ENDP
+
+PROC Output
+    MOV AH, 2
+    MOV CX, 2
+    
+L11:MOV DL, BL
+    SHR DL, 4
+    SHL BL, 4
+    
+    CMP DL, 10
+    JGE Letter
+    
+    ADD DL, 48
+    INT 21H   
+    JMP end11
+    
+Letter: ADD DL, 55
+        INT 21H
+                   
+    end11: LOOP L11
+           Mov DL,20H
+           INT 21H
+        
+        
+  ret
+    
+
+ENDP    
